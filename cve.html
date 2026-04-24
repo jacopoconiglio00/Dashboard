@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SecureX — CVE Explorer</title>
+<link rel="stylesheet" href="css/style.css"/>
+<style>
+  .search-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .search-bar .input { flex: 1; min-width: 240px; font-size: 14px; padding: 12px 16px; }
+
+  .filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-right: 4px;
+  }
+
+  .sev-filter {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 5px 12px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+
+  .sev-filter:hover { border-color: var(--border-hover); color: var(--text); }
+  .sev-filter.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .sev-filter.active.CRITICAL { background: rgba(220,38,38,0.1); border-color: var(--critical); color: var(--critical); }
+  .sev-filter.active.HIGH { background: rgba(234,88,12,0.1); border-color: var(--high); color: var(--high); }
+  .sev-filter.active.MEDIUM { background: rgba(202,138,4,0.1); border-color: var(--yellow); color: var(--yellow); }
+  .sev-filter.active.LOW { background: rgba(22,163,74,0.1); border-color: var(--green); color: var(--green); }
+
+  .results-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    letter-spacing: 0.5px;
+  }
+
+  .results-meta span { color: var(--accent); }
+
+  /* CVE CARDS */
+  .cve-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .cve-row {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    animation: fadeUp 0.3s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cve-row::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+
+  .cve-row.CRITICAL::before { background: var(--critical); }
+  .cve-row.HIGH::before { background: var(--high); }
+  .cve-row.MEDIUM::before { background: var(--yellow); }
+  .cve-row.LOW::before { background: var(--green); }
+  .cve-row.NONE::before { background: var(--text-muted); }
+
+  .cve-row:hover { border-color: var(--border-hover); background: var(--bg-secondary); }
+  .cve-row.expanded { border-color: var(--border-hover); }
+
+  .cve-row-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .cve-row-title { flex: 1; min-width: 200px; }
+  .cve-row-id { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+  .cve-row-desc { font-size: 13px; color: var(--text-secondary); margin-top: 3px; line-height: 1.5; }
+
+  .cve-row-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .cvss-score {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    min-width: 36px;
+    text-align: center;
+  }
+
+  .cve-detail {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: none;
+  }
+
+  .cve-row.expanded .cve-detail { display: block; }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .detail-cell {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+  }
+
+  .detail-cell-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .detail-cell-val {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .full-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 14px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius);
+    border-left: 2px solid var(--accent);
+  }
+
+  .ref-list { display: flex; flex-direction: column; gap: 4px; }
+
+  .ref-link {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    max-width: 100%;
+  }
+
+  .ref-link:hover { text-decoration: underline; }
+
+  .ref-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .page-info {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 0 12px;
+  }
+
+  .kev-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    background: rgba(239,68,68,0.12);
+    color: var(--red);
+    border: 1px solid rgba(239,68,68,0.25);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .chevron {
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .cve-row.expanded .chevron { transform: rotate(180deg); }
+</style>
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<div class="page-wrap">
+
+  <div class="page-header">
+    <div class="page-tag">Vulnerability Database</div>
+    <h1 class="page-title">CVE Explorer</h1>
+    <p class="page-sub">Search and analyze CVEs from the NIST National Vulnerability Database. Click any CVE to expand full details.</p>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-bar">
+    <input class="input" type="text" id="search-input" placeholder="Search by keyword, CVE ID (e.g. CVE-2024-1234), vendor..." />
+    <select class="select" id="date-range">
+      <option value="7">Last 7 days</option>
+      <option value="30" selected>Last 30 days</option>
+      <option value="90">Last 90 days</option>
+      <option value="365">Last year</option>
+    </select>
+    <button class="btn btn-primary" onclick="doSearch()">Search</button>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters">
+    <span class="filter-label">Severity:</span>
+    <button class="sev-filter active" data-sev="ALL" onclick="setSevFilter('ALL',this)">All</button>
+    <button class="sev-filter CRITICAL" data-sev="CRITICAL" onclick="setSevFilter('CRITICAL',this)">Critical</button>
+    <button class="sev-filter HIGH" data-sev="HIGH" onclick="setSevFilter('HIGH',this)">High</button>
+    <button class="sev-filter MEDIUM" data-sev="MEDIUM" onclick="setSevFilter('MEDIUM',this)">Medium</button>
+    <button class="sev-filter LOW" data-sev="LOW" onclick="setSevFilter('LOW',this)">Low</button>
+  </div>
+
+  <div class="results-meta" id="results-meta">Enter a search query or load recent CVEs</div>
+
+  <div class="cve-list" id="cve-list">
+    <div class="loading-box"><div class="spinner"></div>Loading recent CVEs...</div>
+  </div>
+
+  <div class="pagination" id="pagination"></div>
+
+</div>
+
+<div class="footer" id="footer"></div>
+
+<script src="js/shared.js"></script>
+<script>
+renderNavbar('cve');
+renderFooter();
+
+let allResults = [];
+let filtered = [];
+let currentPage = 1;
+const PER_PAGE = 15;
+let activeSev = 'ALL';
+let kevSet = new Set();
+
+// Load CISA KEV IDs for tagging
+async function loadKEV() {
+  try {
+    const r = await fetch(CISAAPI);
+    const d = await r.json();
+    (d.vulnerabilities || []).forEach(v => kevSet.add(v.cveID));
+  } catch {}
+}
+
+// Check URL for specific CVE
+function checkURLParams() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if (id) {
+    document.getElementById('search-input').value = id;
+    doSearch();
+  } else {
+    doSearch();
+  }
+}
+
+async function doSearch() {
+  const query = document.getElementById('search-input').value.trim();
+  const days = parseInt(document.getElementById('date-range').value);
+  currentPage = 1;
+
+  document.getElementById('cve-list').innerHTML = '<div class="loading-box"><div class="spinner"></div>Querying NVD...</div>';
+  document.getElementById('results-meta').textContent = 'Searching...';
+  document.getElementById('pagination').innerHTML = '';
+
+  try {
+    const end = new Date();
+    const start = new Date(); start.setDate(start.getDate() - days);
+    const fmt = d => d.toISOString().replace(/\.\d+Z$/, '.000 UTC+00:00');
+
+    let url = `${NVDAPI}?pubStartDate=${encodeURIComponent(fmt(start))}&pubEndDate=${encodeURIComponent(fmt(end))}&resultsPerPage=100`;
+
+    // CVE ID search
+    if (/^CVE-\d{4}-\d+$/i.test(query)) {
+      url = `${NVDAPI}?cveId=${query.toUpperCase()}`;
+    } else if (query) {
+      url = `${NVDAPI}?keywordSearch=${encodeURIComponent(query)}&pubStartDate=${encodeURIComponent(fmt(start))}&pubEndDate=${encodeURIComponent(fmt(end))}&resultsPerPage=100`;
+    }
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    allResults = (data.vulnerabilities || []).map(v => v.cve);
+
+    applyFilters();
+  } catch(e) {
+    document.getElementById('cve-list').innerHTML = `<div class="error-box">Error fetching data: ${e.message}<br><small style="opacity:0.6;margin-top:4px;display:block">NVD API may be rate-limited. Wait a moment and retry.</small></div>`;
+    document.getElementById('results-meta').textContent = 'Error';
+  }
+}
+
+function setSevFilter(sev, el) {
+  activeSev = sev;
+  document.querySelectorAll('.sev-filter').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  currentPage = 1;
+  applyFilters();
+}
+
+function applyFilters() {
+  filtered = allResults.filter(cve => {
+    if (activeSev === 'ALL') return true;
+    return cvssToSeverity(getCVSS(cve)) === activeSev;
+  });
+
+  const total = filtered.length;
+  const query = document.getElementById('search-input').value.trim();
+  document.getElementById('results-meta').innerHTML =
+    `Showing <span>${Math.min(PER_PAGE, total)}</span> of <span>${total}</span> results${query ? ` for "<span>${query}</span>"` : ' (recent CVEs)'}`;
+
+  renderPage();
+  renderPagination();
+}
+
+function renderPage() {
+  const start = (currentPage - 1) * PER_PAGE;
+  const page = filtered.slice(start, start + PER_PAGE);
+
+  if (!page.length) {
+    document.getElementById('cve-list').innerHTML = '<div class="loading-box" style="color:var(--text-muted)">No CVEs found matching your filters.</div>';
+    return;
+  }
+
+  document.getElementById('cve-list').innerHTML = page.map((cve, i) => {
+    const score = getCVSS(cve);
+    const sev = cvssToSeverity(score);
+    const isKEV = kevSet.has(cve.id);
+    const scoreColors = { CRITICAL: 'var(--critical)', HIGH: 'var(--high)', MEDIUM: 'var(--yellow)', LOW: 'var(--green)', NONE: 'var(--text-muted)' };
+
+    return `
+      <div class="cve-row ${sev}" style="animation-delay:${i*0.03}s" id="row-${cve.id}" onclick="toggleExpand('${cve.id}')">
+        <div class="cve-row-top">
+          <div class="cve-row-title">
+            <div class="cve-row-id">${cve.id} ${isKEV ? '<span class="kev-tag">KEV</span>' : ''}</div>
+            <div class="cve-row-desc">${truncate(getDesc(cve), 120)}</div>
+          </div>
+          <div class="cve-row-meta">
+            <div class="cvss-score" style="color:${scoreColors[sev]}">${score ?? '—'}</div>
+            <span class="sev sev-${sev}">${sev}</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">${fmtDate(cve.published)}</span>
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+
+        <div class="cve-detail">
+          <div class="full-desc">${getDesc(cve)}</div>
+          <div class="detail-grid">
+            <div class="detail-cell">
+              <div class="detail-cell-label">CVE ID</div>
+              <div class="detail-cell-val">${cve.id}</div>
+            </div>
+            <div class="detail-cell">
+              <div class="detail-cell-label">CVSS Score</div>
+              <div class="detail-cell-val" style="color:${scoreColors[sev]}">${score ?? 'N/A'} — ${sev}</div>
+            </div>
+            <div class="detail-cell">
+              <div class="detail-cell-label">Published</div>
+              <div class="detail-cell-val">${fmtDate(cve.published)}</div>
+            </div>
+            <div class="detail-cell">
+              <div class="detail-cell-label">Last Modified</div>
+              <div class="detail-cell-val">${fmtDate(cve.lastModified)}</div>
+            </div>
+            <div class="detail-cell">
+              <div class="detail-cell-label">CISA KEV</div>
+              <div class="detail-cell-val" style="color:${isKEV?'var(--red)':'var(--text-muted)'}">${isKEV ? '⚠ YES — Actively Exploited' : 'Not listed'}</div>
+            </div>
+            <div class="detail-cell">
+              <div class="detail-cell-label">Status</div>
+              <div class="detail-cell-val" style="color:var(--text-muted)">${cve.vulnStatus || '—'}</div>
+            </div>
+          </div>
+          ${cve.references?.length ? `
+            <div class="ref-label">References (${cve.references.length})</div>
+            <div class="ref-list">
+              ${cve.references.slice(0,5).map(r => `<a class="ref-link" href="${r.url}" target="_blank" rel="noopener">${r.url}</a>`).join('')}
+              ${cve.references.length > 5 ? `<span style="font-family:var(--mono);font-size:10px;color:var(--text-muted)">+${cve.references.length-5} more on NVD</span>` : ''}
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleExpand(id) {
+  const row = document.getElementById(`row-${id}`);
+  row.classList.toggle('expanded');
+}
+
+function renderPagination() {
+  const pages = Math.ceil(filtered.length / PER_PAGE);
+  if (pages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+
+  document.getElementById('pagination').innerHTML = `
+    <button class="btn btn-ghost" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>← Prev</button>
+    <span class="page-info">Page ${currentPage} of ${pages}</span>
+    <button class="btn btn-ghost" onclick="goPage(${currentPage+1})" ${currentPage===pages?'disabled':''}>Next →</button>
+  `;
+}
+
+function goPage(p) {
+  const pages = Math.ceil(filtered.length / PER_PAGE);
+  if (p < 1 || p > pages) return;
+  currentPage = p;
+  renderPage();
+  renderPagination();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// Enter key search
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('search-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+});
+
+loadKEV().then(() => checkURLParams());
+</script>
+</body>
+</html>

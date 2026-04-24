@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SecureX — Threat Dashboard</title>
+<link rel="stylesheet" href="css/style.css"/>
+<style>
+  /* ─── DASHBOARD-SPECIFIC ─── */
+  .kev-table-wrap { overflow-x: auto; }
+
+  .chart-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .sev-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sev-bar-row:last-child { border-bottom: none; }
+
+  .sev-bar-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    width: 60px;
+    flex-shrink: 0;
+  }
+
+  .sev-bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .sev-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .sev-bar-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .timeline-item {
+    display: flex;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp 0.3s ease both;
+  }
+
+  .timeline-item:last-child { border-bottom: none; }
+
+  .timeline-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+
+  .timeline-content { flex: 1; }
+
+  .timeline-id {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .timeline-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 4px;
+  }
+
+  .timeline-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .vendor-pill {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .mini-donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 8px 0;
+  }
+
+  .donut-legend { flex: 1; }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  .legend-label { display: flex; align-items: center; color: var(--text-secondary); }
+  .legend-val { color: var(--text); }
+
+  .highlight-row {
+    background: rgba(239,68,68,0.04);
+    border-left: 2px solid var(--critical);
+    padding-left: 10px;
+    margin: 4px 0;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .cisa-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 2px;
+    background: rgba(239,68,68,0.15);
+    color: var(--red);
+    border: 1px solid rgba(239,68,68,0.3);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<div class="page-wrap">
+
+  <div class="page-header">
+    <div class="page-tag">Threat Intelligence</div>
+    <h1 class="page-title">Security Dashboard</h1>
+    <p class="page-sub">Real-time vulnerability data from NIST NVD & CISA Known Exploited Vulnerabilities catalog</p>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="grid-4" id="stat-cards">
+    <div class="stat-card blue" style="animation-delay:0s">
+      <div class="stat-label">CVE This Week</div>
+      <div class="stat-value blue" id="stat-week">—</div>
+      <div class="stat-sub" id="stat-week-sub">Loading...</div>
+    </div>
+    <div class="stat-card red" style="animation-delay:0.07s">
+      <div class="stat-label">Critical Severity</div>
+      <div class="stat-value red" id="stat-critical">—</div>
+      <div class="stat-sub">CVSS ≥ 9.0</div>
+    </div>
+    <div class="stat-card orange" style="animation-delay:0.14s">
+      <div class="stat-label">CISA KEV (Total)</div>
+      <div class="stat-value orange" id="stat-kev">—</div>
+      <div class="stat-sub">Actively exploited</div>
+    </div>
+    <div class="stat-card green" style="animation-delay:0.21s">
+      <div class="stat-label">KEV This Month</div>
+      <div class="stat-value green" id="stat-kev-month">—</div>
+      <div class="stat-sub" id="stat-month-label">Added recently</div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Severity Chart + Recent CVEs -->
+  <div class="grid-2-1">
+
+    <!-- Recent CVEs -->
+    <div class="card fade-in">
+      <div class="card-header">
+        <span class="card-title">Recent CVEs — Last 7 Days</span>
+        <a href="cve.html" class="btn btn-ghost" style="padding:4px 12px;font-size:10px;">View All →</a>
+      </div>
+      <div id="recent-cves">
+        <div class="loading-box"><div class="spinner"></div>Fetching NVD data...</div>
+      </div>
+    </div>
+
+    <!-- Severity breakdown -->
+    <div class="card fade-in">
+      <div class="card-header">
+        <span class="card-title">Severity Breakdown</span>
+        <span class="card-badge" style="color:var(--text-muted);border-color:var(--border);">7d</span>
+      </div>
+      <div id="sev-chart">
+        <div class="loading-box"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 3: CISA KEV Recent -->
+  <div class="card fade-in" style="margin-bottom:24px;">
+    <div class="card-header">
+      <span class="card-title">⚠ CISA Known Exploited Vulnerabilities — Latest Additions</span>
+      <span class="cisa-badge">ACTIVELY EXPLOITED</span>
+    </div>
+    <div class="kev-table-wrap">
+      <div id="kev-table">
+        <div class="loading-box"><div class="spinner"></div>Fetching CISA KEV catalog...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer" id="footer"></div>
+
+<script src="js/shared.js"></script>
+<script>
+renderNavbar('dashboard');
+renderFooter();
+
+// ─── LOAD DATA ───────────────────────────────────────────────────
+
+async function loadDashboard() {
+  await Promise.all([loadRecentCVEs(), loadCISAKEV()]);
+}
+
+async function loadRecentCVEs() {
+  try {
+    const end = new Date();
+    const start = new Date(); start.setDate(start.getDate() - 7);
+    const fmt = d => d.toISOString().replace(/\.\d+Z$/, '.000 UTC+00:00');
+
+    const url = `${NVDAPI}?pubStartDate=${encodeURIComponent(fmt(start))}&pubEndDate=${encodeURIComponent(fmt(end))}&resultsPerPage=40`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('NVD API error');
+    const data = await res.json();
+    const cves = data.vulnerabilities || [];
+
+    // Stats
+    document.getElementById('stat-week').textContent = data.totalResults ?? cves.length;
+    document.getElementById('stat-week-sub').textContent = `${start.toLocaleDateString('it-IT')} – ${end.toLocaleDateString('it-IT')}`;
+
+    // Severity counts
+    let counts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, NONE: 0 };
+    cves.forEach(v => {
+      const score = getCVSS(v.cve);
+      const sev = cvssToSeverity(score);
+      counts[sev]++;
+    });
+    document.getElementById('stat-critical').textContent = counts.CRITICAL;
+
+    // Severity chart
+    const total = cves.length || 1;
+    const colors = { CRITICAL: 'var(--critical)', HIGH: 'var(--high)', MEDIUM: 'var(--yellow)', LOW: 'var(--green)', NONE: 'var(--text-muted)' };
+    document.getElementById('sev-chart').innerHTML = Object.entries(counts).map(([sev, n]) => `
+      <div class="sev-bar-row">
+        <span class="sev-bar-label" style="color:${colors[sev]}">${sev}</span>
+        <div class="sev-bar-track">
+          <div class="sev-bar-fill" style="width:${(n/total*100).toFixed(1)}%;background:${colors[sev]}"></div>
+        </div>
+        <span class="sev-bar-count">${n}</span>
+      </div>
+    `).join('');
+
+    // Recent CVEs list
+    const topCVEs = cves.slice(0, 10);
+    document.getElementById('recent-cves').innerHTML = topCVEs.map((v, i) => {
+      const cve = v.cve;
+      const score = getCVSS(cve);
+      const sev = cvssToSeverity(score);
+      const colors2 = { CRITICAL: 'var(--critical)', HIGH: 'var(--high)', MEDIUM: 'var(--yellow)', LOW: 'var(--green)', NONE: 'var(--text-muted)' };
+      return `
+        <div class="timeline-item" style="animation-delay:${i*0.04}s">
+          <div class="timeline-dot" style="background:${colors2[sev]}"></div>
+          <div class="timeline-content">
+            <div class="timeline-id">
+              <a class="cve-id" href="cve.html?id=${cve.id}">${cve.id}</a>
+              <span class="sev sev-${sev}">${sev}${score ? ' · '+score : ''}</span>
+            </div>
+            <div class="timeline-desc">${truncate(getDesc(cve), 110)}</div>
+            <div class="timeline-meta">${fmtDate(cve.published)}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+  } catch(e) {
+    document.getElementById('recent-cves').innerHTML = `<div class="error-box">Failed to load NVD data. The API may be rate-limited. Try again in a moment.<br><small style="opacity:0.6;margin-top:4px;display:block">${e.message}</small></div>`;
+    document.getElementById('sev-chart').innerHTML = `<div class="error-box">—</div>`;
+    document.getElementById('stat-week').textContent = 'N/A';
+    document.getElementById('stat-critical').textContent = 'N/A';
+  }
+}
+
+async function loadCISAKEV() {
+  try {
+    const res = await fetch(CISAAPI);
+    if (!res.ok) throw new Error('CISA API error');
+    const data = await res.json();
+    const vulns = data.vulnerabilities || [];
+
+    document.getElementById('stat-kev').textContent = vulns.length;
+
+    // This month
+    const now = new Date();
+    const thisMonth = vulns.filter(v => {
+      const d = new Date(v.dateAdded);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    document.getElementById('stat-kev-month').textContent = thisMonth.length;
+    document.getElementById('stat-month-label').textContent = now.toLocaleString('en-US', {month:'long', year:'numeric'});
+
+    // Latest 15
+    const latest = [...vulns].sort((a,b) => new Date(b.dateAdded) - new Date(a.dateAdded)).slice(0, 15);
+
+    document.getElementById('kev-table').innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>CVE ID</th>
+            <th>Vendor</th>
+            <th>Product</th>
+            <th>Vulnerability</th>
+            <th>Due Date</th>
+            <th>Added</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${latest.map(v => `
+            <tr>
+              <td><a class="cve-id" href="cve.html?id=${v.cveID}">${v.cveID}</a></td>
+              <td><span class="vendor-pill">${v.vendorProject || '—'}</span></td>
+              <td style="font-size:12px;color:var(--text-secondary)">${v.product || '—'}</td>
+              <td style="font-size:12px;color:var(--text-secondary);max-width:260px">${truncate(v.vulnerabilityName, 60)}</td>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--red)">${fmtDate(v.dueDate)}</td>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">${fmtDate(v.dateAdded)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+
+  } catch(e) {
+    document.getElementById('kev-table').innerHTML = `<div class="error-box">Failed to load CISA KEV data.<br><small style="opacity:0.6">${e.message}</small></div>`;
+    document.getElementById('stat-kev').textContent = 'N/A';
+    document.getElementById('stat-kev-month').textContent = 'N/A';
+  }
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

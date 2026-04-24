@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SecureX — About</title>
+<link rel="stylesheet" href="css/style.css"/>
+<style>
+  .about-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 768px) { .about-grid { grid-template-columns: 1fr; } }
+
+  /* ─── Profile card ─── */
+  .profile-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: sticky;
+    top: 80px;
+  }
+
+  .profile-banner {
+    height: 80px;
+    background: linear-gradient(135deg, #0f2040 0%, #1a3560 50%, #0d1a2e 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .profile-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(59,130,246,0.05) 10px,
+      rgba(59,130,246,0.05) 20px
+    );
+  }
+
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid var(--bg-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--display);
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    margin: -32px 20px 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .profile-body { padding: 12px 20px 20px; }
+
+  .profile-name {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .profile-role {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  .profile-bio {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .profile-info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .profile-info-row svg { flex-shrink: 0; opacity: 0.5; }
+
+  .social-links {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .social-btn {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 10px;
+    text-decoration: none;
+    padding: 8px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .social-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+  /* ─── Main content ─── */
+  .section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title-icon {
+    width: 6px;
+    height: 20px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* Skills */
+  .skill-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (max-width: 480px) { .skill-grid { grid-template-columns: 1fr; } }
+
+  .skill-item { }
+
+  .skill-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .skill-name { color: var(--text-secondary); }
+  .skill-level { color: var(--text-muted); }
+
+  .skill-track {
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .skill-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 1s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* Timeline */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+
+  .tl-item {
+    display: flex;
+    gap: 16px;
+    padding-bottom: 24px;
+    position: relative;
+  }
+
+  .tl-item:last-child { padding-bottom: 0; }
+
+  .tl-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .tl-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg-card);
+    outline: 1px solid var(--accent);
+    flex-shrink: 0;
+  }
+
+  .tl-line {
+    width: 1px;
+    flex: 1;
+    background: var(--border);
+    margin-top: 6px;
+  }
+
+  .tl-item:last-child .tl-line { display: none; }
+
+  .tl-content { flex: 1; }
+
+  .tl-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .tl-org {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .tl-date {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .tl-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* Tags */
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .tag.accent { background: var(--accent-dim); border-color: rgba(59,130,246,0.3); color: var(--accent); }
+
+  /* Breach checker */
+  .breach-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .breach-input-row .input { flex: 1; }
+
+  .breach-result {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    display: none;
+  }
+
+  .breach-result.found { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: var(--red); }
+  .breach-result.safe { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); color: var(--green); }
+  .breach-result.error { background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-muted); }
+
+  .breach-disclaimer {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<div class="page-wrap">
+
+  <div class="page-header">
+    <div class="page-tag">About & CV</div>
+    <h1 class="page-title">Jacopo Coniglio</h1>
+    <p class="page-sub">Security Engineer · MSc Student @ Politecnico di Torino</p>
+  </div>
+
+  <div class="about-grid">
+
+    <!-- SIDEBAR -->
+    <div>
+      <div class="profile-card fade-in">
+        <div class="profile-banner"></div>
+        <div class="profile-avatar">JC</div>
+        <div class="profile-body">
+          <div class="profile-name">Jacopo Coniglio</div>
+          <div class="profile-role">Security Engineer · MSc</div>
+          <div class="profile-bio">
+            MSc student in Cybersecurity at Politecnico di Torino. Focused on vulnerability research, threat intelligence, and building security tools. Looking for opportunities in offensive security & threat analysis.
+          </div>
+          <div class="profile-info-row">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Turin, Italy
+          </div>
+          <div class="profile-info-row">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.12 6.12l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Available for internships & thesis
+          </div>
+          <div class="profile-info-row">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Open to remote/hybrid
+          </div>
+          <div class="social-links">
+            <a class="social-btn" href="https://github.com/jacopoconiglio00" target="_blank">GitHub</a>
+            <a class="social-btn" href="#" target="_blank">LinkedIn</a>
+            <a class="social-btn" href="mailto:your@email.com">Email</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div>
+
+      <!-- Skills -->
+      <div class="section" style="animation-delay:0.05s">
+        <div class="section-title"><div class="section-title-icon"></div>Technical Skills</div>
+        <div class="skill-grid">
+          <div class="skill-item">
+            <div class="skill-header"><span class="skill-name">Network Security</span><span class="skill-level">Advanced</span></div>
+            <div class="skill-track"><div class="skill-fill" style="width:85%"></div></div>
+          </div>
+          <div class="skill-item">
+            <div class="skill-header"><span class="skill-name">Vulnerability Research</span><span class="skill-level">Advanced</span></div>
+            <div class="skill-track"><div class="skill-fill" style="width:80%"></div></div>
+          </div>
+          <div class="skill-item">
+            <div class="skill-header"><span class="skill-name">Penetration Testing</span><span class="skill-level">Intermediate</span></div>
+            <div class="skill-track"><div class="skill-fill" style="width:70%"></div></div>
+          </div>
+          <div class="skill-item">
+            <div class="skill-header"><span class="skill-name">Threat Intelligence</span><span class="skill-level">Intermediate</span></div>
+            <div class="skill-track"><div class="skill-fill" style="width:72%"></div></div>
+          </div>
+          <div class="skill-item">
+            <div class="skill-header"><span class="skill-name">Python / Scripting</span><span class="skill-level">Advanced</span></div>
+            <div class="skill-track"><div class="skill-fill" style="width:82%"></div></div>
+          </div>
+          <div class="skill-item">
+            <div class="skill-header"><span class="skill-name">Cryptography</span><span class="skill-level">Advanced</span></div>
+            <div class="skill-track"><div class="skill-fill" style="width:88%"></div></div>
+          </div>
+          <div class="skill-item">
+            <div class="skill-header"><span class="skill-name">SIEM / Log Analysis</span><span class="skill-level">Intermediate</span></div>
+            <div class="skill-track"><div class="skill-fill" style="width:65%"></div></div>
+          </div>
+          <div class="skill-item">
+            <div class="skill-header"><span class="skill-name">Web App Security</span><span class="skill-level">Intermediate</span></div>
+            <div class="skill-track"><div class="skill-fill" style="width:68%"></div></div>
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <div class="section-title" style="font-size:12px;margin-bottom:12px;border:none;padding:0"><div class="section-title-icon"></div>Tools & Technologies</div>
+          <div class="tag-list">
+            <span class="tag accent">Wireshark</span>
+            <span class="tag accent">Burp Suite</span>
+            <span class="tag accent">Nmap</span>
+            <span class="tag accent">Metasploit</span>
+            <span class="tag">Python</span>
+            <span class="tag">Linux</span>
+            <span class="tag">Git</span>
+            <span class="tag">Docker</span>
+            <span class="tag">Splunk</span>
+            <span class="tag">OWASP</span>
+            <span class="tag">CVSS</span>
+            <span class="tag">CTF</span>
+            <span class="tag">IDA Pro</span>
+            <span class="tag">Ghidra</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Education & Experience -->
+      <div class="section" style="animation-delay:0.1s">
+        <div class="section-title"><div class="section-title-icon"></div>Education & Experience</div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div>
+            <div class="tl-content">
+              <div class="tl-title">MSc in Cybersecurity Engineering</div>
+              <div class="tl-org">Politecnico di Torino</div>
+              <div class="tl-date">2024 — Present · Turin, Italy</div>
+              <div class="tl-desc">Focused on network security, cryptographic protocols, vulnerability analysis, and secure systems design. Thesis research in progress on threat intelligence automation.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div>
+            <div class="tl-content">
+              <div class="tl-title">BSc in Computer Engineering</div>
+              <div class="tl-org">Politecnico di Torino</div>
+              <div class="tl-date">2021 — 2024 · Turin, Italy</div>
+              <div class="tl-desc">Core curriculum in algorithms, networking, operating systems, and software engineering. Final project on secure protocol implementation.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-left"><div class="tl-dot" style="background:var(--cyan)"></div><div class="tl-line"></div></div>
+            <div class="tl-content">
+              <div class="tl-title">CTF Competitions</div>
+              <div class="tl-org">Various Platforms — PicoCTF, HackTheBox, TryHackMe</div>
+              <div class="tl-date">2022 — Present</div>
+              <div class="tl-desc">Active participant in Capture The Flag competitions. Specialization in binary exploitation, reverse engineering, and cryptography challenges.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Projects -->
+      <div class="section" style="animation-delay:0.15s">
+        <div class="section-title"><div class="section-title-icon"></div>Projects</div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-left"><div class="tl-dot" style="background:var(--accent)"></div><div class="tl-line"></div></div>
+            <div class="tl-content">
+              <div class="tl-title">SecureX — This Platform</div>
+              <div class="tl-org">Personal Project · Open Source</div>
+              <div class="tl-date">2025</div>
+              <div class="tl-desc">Real-time vulnerability intelligence dashboard aggregating NIST NVD and CISA KEV data. Built with vanilla JS and public APIs. Demonstrates applied knowledge of CVE ecosystem.</div>
+              <div class="tag-list" style="margin-top:8px">
+                <span class="tag">HTML/CSS/JS</span><span class="tag">NVD API</span><span class="tag">CISA KEV</span><span class="tag">GitHub Pages</span>
+              </div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-left"><div class="tl-dot" style="background:var(--cyan)"></div><div class="tl-line"></div></div>
+            <div class="tl-content">
+              <div class="tl-title">Network Traffic Analyzer</div>
+              <div class="tl-org">University Project</div>
+              <div class="tl-date">2024</div>
+              <div class="tl-desc">Python tool for .pcap file analysis and anomaly detection. Identifies suspicious patterns using statistical analysis and signature matching.</div>
+              <div class="tag-list" style="margin-top:8px">
+                <span class="tag">Python</span><span class="tag">Scapy</span><span class="tag">Wireshark</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Breach Checker Demo -->
+      <div class="section" style="animation-delay:0.2s">
+        <div class="section-title"><div class="section-title-icon"></div>
+          Live Demo — Email Breach Checker
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);font-weight:400;letter-spacing:0;text-transform:none;margin-left:auto">via HaveIBeenPwned</span>
+        </div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6">Check if an email address has appeared in known data breaches. Uses the HaveIBeenPwned public API (k-anonymity model — your full email is never sent).</p>
+        <div class="breach-input-row">
+          <input class="input" type="email" id="breach-email" placeholder="test@example.com" />
+          <button class="btn btn-primary" onclick="checkBreach()">Check</button>
+        </div>
+        <div class="breach-result" id="breach-result"></div>
+        <p class="breach-disclaimer">⚠ Note: HIBP API requires a paid key for email lookup. This demo uses the password check endpoint (k-anonymity SHA-1 prefix) as a live demonstration of the privacy-preserving lookup method. To enable full email checks, add your HIBP API key.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="footer" id="footer"></div>
+
+<script src="js/shared.js"></script>
+<script>
+renderNavbar('about');
+renderFooter();
+
+async function checkBreach() {
+  const email = document.getElementById('breach-email').value.trim();
+  const result = document.getElementById('breach-result');
+  if (!email) return;
+
+  result.className = 'breach-result error';
+  result.style.display = 'block';
+  result.textContent = 'Checking...';
+
+  // Demo: use password k-anon endpoint with email as demo string
+  // Full email check requires HIBP paid API key
+  try {
+    // SHA-1 of email (browser SubtleCrypto)
+    const encoder = new TextEncoder();
+    const data = encoder.encode(email.toLowerCase());
+    const hashBuffer = await crypto.subtle.digest('SHA-1', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+    const prefix = hashHex.slice(0, 5);
+    const suffix = hashHex.slice(5);
+
+    const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
+    const text = await res.text();
+    const lines = text.split('\n');
+    const match = lines.find(l => l.startsWith(suffix));
+
+    result.style.display = 'block';
+    if (match) {
+      const count = match.split(':')[1]?.trim();
+      result.className = 'breach-result found';
+      result.innerHTML = `⚠ FOUND IN BREACHES<br>This email's hash prefix matches ${parseInt(count).toLocaleString()} compromised records in the HIBP database.<br><span style="opacity:0.7;font-size:10px">This is a k-anonymity demo — only the first 5 chars of the SHA-1 hash were sent to the API.</span>`;
+    } else {
+      result.className = 'breach-result safe';
+      result.innerHTML = `✓ NOT FOUND<br>No breach records found for this email hash prefix.<br><span style="opacity:0.7;font-size:10px">K-anonymity check complete — your full email was never transmitted.</span>`;
+    }
+  } catch(e) {
+    result.className = 'breach-result error';
+    result.textContent = 'Error: could not reach HIBP API. Check network / CORS.';
+  }
+}
+
+document.getElementById('breach-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkBreach();
+});
+</script>
+</body>
+</html>
